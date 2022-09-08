@@ -28,4 +28,4 @@ RUN helm repo add bitnami https://charts.bitnami.com/bitnami
 
 RUN helm repo update
 
-ENTRYPOINT [ "bash" ]
+EXPOSE 8443

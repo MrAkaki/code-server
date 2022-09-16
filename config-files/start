@@ -1,0 +1,41 @@
+#!/bin/bash
+if [ -n "${SUDO_PASSWORD}" ] || [ -n "${SUDO_PASSWORD_HASH}" ]; then
+    if ! grep -q 'coder' /etc/sudoers; then
+        echo "coder ALL=(ALL:ALL) ALL" >> /etc/sudoers
+    fi
+    if [ -n "${SUDO_PASSWORD_HASH}" ]; then
+        sed -i "s|^coder:\!:|coder:${SUDO_PASSWORD_HASH}:|" /etc/shadow
+    else
+        echo -e "${SUDO_PASSWORD}\n${SUDO_PASSWORD}" | passwd coder
+    fi
+fi
+
+mkdir -p /config/{extensions,data,workspace,.ssh}
+
+#Fix permisions
+chown -R coder:coder /config
+
+# Start code-server
+if [ -n "${PASSWORD}" ] || [ -n "${HASHED_PASSWORD}" ]; then
+    AUTH="password"
+else
+    AUTH="none"
+    echo "starting with no password"
+fi
+
+if [ -z ${PROXY_DOMAIN+x} ]; then
+    PROXY_DOMAIN_ARG=""
+else
+    PROXY_DOMAIN_ARG="--proxy-domain=${PROXY_DOMAIN}"
+fi
+
+su coder -c "\
+        /usr/bin/code-server \
+            --user-data-dir /config/data \
+            --extensions-dir /config/extensions \
+            --disable-telemetry \
+            --bind-addr 0.0.0.0:8443 \
+            --auth \"${AUTH}\" \
+            /config/workspace
+            "
+

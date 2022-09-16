@@ -1,15 +1,29 @@
-FROM lscr.io/linuxserver/code-server:latest
+FROM debian:stable-slim
 
 # Update image
 RUN apt update
 RUN apt upgrade -y
 
 RUN apt install -y \
+    systemd \
     iputils-ping \
     ca-certificates \    
     wget \
     curl \
-    git 
+    git \
+    bash \
+    nano \
+    sudo
+
+# Create user
+RUN useradd -s /bin/bash --home-dir /config/workspace -m coder
+
+# Install code-server
+RUN curl -fsSL https://code-server.dev/install.sh | sh
+
+## Copy config file
+COPY /config-files /usr/local/bin
+RUN chmod +x /usr/local/bin/*
 
 # Install custom tools
 
@@ -22,10 +36,5 @@ RUN rm kubectl*
 RUN kubectl version --client
 ENV KUBECONFIG=/root/.kube/config.yaml
 
-#helm 3
-RUN curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-RUN helm repo add bitnami https://charts.bitnami.com/bitnami
-
-RUN helm repo update
-
 EXPOSE 8443
+ENTRYPOINT ["/usr/local/bin/start"]
